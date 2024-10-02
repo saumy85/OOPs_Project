@@ -1,217 +1,152 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
+
 using namespace std;
 
+class Comment {
+private:
+    string content;
+    string author;
+public:
+    Comment(string comment = "", string author = "") :
+        content(comment), author(author) {}
 
-class Player{
-    private:
-        string name;
-        string role;
-        int basePrice;
-        int soldPrice;
-        string team;
-        bool sold;
-        vector<int>bidHistory;
-    public:
-        Player(string name,string role,int basePrice)
-        :name(name),role(role),basePrice(basePrice),soldPrice(0),team("Unsold"),sold(false){}
-
-        void setSoldPrice(int price){
-            soldPrice=price;
-            sold=true;
-        }
-
-        void setTeam(string teamName){
-            team=teamName;
-        }
-
-        int getBasePrice(){
-           return basePrice;
-        }
-
-        int getSoldPrice(){
-          return soldPrice;
-        }
-
-        string getName(){
-            return name;
-        }
-
-        string getRole(){
-            return role;
-        }
-
-        string getTeam(){
-            return team;
-        }
-
-        bool isSold(){
-            return sold;
-        }
-
-        void addBidHistory(int bid){
-            bidHistory.push_back(bid);
-        }
-
-        void displayBidHistory(){
-            cout<<"\tBid History"<<endl;
-            for(auto it:bidHistory){
-                cout<<it<<" ";
-            }
-            cout<<endl;
-        }
-
+    void printComment() {
+        cout << author << ": " << content << endl;
+    }
 };
 
-class Team{
-    private:
-        string name;
-        int budget;
-        int maxPlayer;
-        int currentPlayer;
-        vector<Player>squad;
-    
-    public:
-        Team(string name,int budget,int maxPlayer,int currentPlayer):
-        name(name),budget(budget),maxPlayer(maxPlayer),currentPlayer(currentPlayer){}
+class Post {
+private:
+    string content;
+    string author;
+    vector<Comment> comments;
+    unordered_set<string> likes;
+public:
+    Post(const string& content, const string& author) :
+        content(content), author(author) {}
 
-        bool bid(Player &player,int bidAmount){
-            if(budget>=bidAmount && currentPlayer<maxPlayer){
-                budget-=bidAmount;
-                player.setSoldPrice(bidAmount);
-                player.setTeam(name);
-                player.addBidHistory(bidAmount);
-                squad.push_back(player);
-                currentPlayer++;
-                return true;
-            }
+    void addComment(const Comment& comment) {
+        comments.push_back(comment);
+    }
+
+    void addLike(const string& username) {
+        likes.insert(username);
+    }
+
+    void printPost() {
+        cout << "Post by " << author << ": " << content << endl;
+        cout << "Likes: " << likes.size() << endl;
+        cout << "Comments: " << endl;
+
+        for (auto& comment : comments) {
+            comment.printComment();
+        }
+    }
+};
+
+class User {
+private:
+    string username;
+    string password;
+    unordered_set<string> likedPosts;
+
+public:
+    User(string username="", string password="") :
+        username(username), password(password) {}
+
+    string getUserName() {
+        return username;
+    }
+
+    bool checkPassword(const string& password) {
+        return this->password == password;
+    }
+
+    void likePost(const string& postId) {
+        likedPosts.insert(postId);
+    }
+
+    void displayLikedPost() {
+        cout << username << " liked post: " << likedPosts.size() << endl;
+    }
+};
+
+class SocialMediaApp {
+private:
+    unordered_map<string, User> users;
+    vector<Post> posts;
+public:
+    bool signup(const string& userName, const string& password) {
+        if (users.count(userName) == 0) {
+            users[userName] = User(userName, password);
+            cout << "User " << userName << " registered successfully!" << endl;
+            return true;
+        }
+        else {
+            cout << "User already exists!" << endl;
             return false;
         }
+    }
 
-        int getBudget(){
-            return budget;
+    User* login(const string& userName, const string& password) {
+        if (users.count(userName) && users[userName].checkPassword(password)) {
+            cout << "User " << userName << " logged in successfully! " << endl;
+            return &users[userName];
         }
+        else {
+            cout << "Invalid login credentials!" << endl;
+            return nullptr;
+        }
+    }
 
-        vector<Player>getSquad(){
-            return squad;
+    void createPost(const string& username, const string& content) {
+        if (users.count(username)) {
+            posts.push_back(Post(content, username));
+            cout << "Post created by " << username << endl;
         }
+    }
 
-        string getName(){
-            return name;
+    void likePost(const string& username, const int& postIndex) {
+        if (users.count(username) && postIndex >= 0 && postIndex < posts.size()) {
+            posts[postIndex].addLike(username);
+            users[username].likePost(to_string(postIndex));
+            cout << username << " liked the post." << endl;
         }
+    }
 
-        int getCurrentPlayer(){
-            return currentPlayer;
+    void commentOnPost(const string& username, int postIndex, const string& commentContent) {
+        if (users.count(username) && postIndex >= 0 && postIndex < posts.size()) {
+            Comment comment(commentContent, username);
+            posts[postIndex].addComment(comment);
+            cout << username << " commented on the post." << endl;
         }
+    }
 
-        int getMaxPlayer(){
-            return maxPlayer;
+    void viewPosts() {
+        cout << "\n----Posts----\n";
+        for (size_t i = 0; i < posts.size(); i++) {
+            cout << "Post Index: " << i << endl;
+            posts[i].printPost();
+            cout << endl;
         }
-
-        void displayTeam(){
-            cout<<"Team: "<<name<<"\nBudget Left: "<<budget<<"\nPlayers:\n";
-            for(auto player:squad){
-                cout<<player.getName()<<"\t"<<player.getRole()<<"\t"<<player.getSoldPrice()<<endl;
-            }
-        }
+    }
 };
 
-class Auctioneer{
-    private:
-        vector<Player>players;
-        vector<Team>teams;
-    public:
-        Auctioneer(vector<Player>playerList,vector<Team>teamList):
-        players(playerList),teams(teamList){}
-    
-        void startAuction(){
-            for(auto player:players){
-                if(!player.isSold()){
-                    auction(player);
-                }
-            }
-        }
+int main() {
+    SocialMediaApp fb;
+    fb.signup("alice", "password");
+    fb.signup("bob", "mypass");
 
-        void auction(Player &player){
-                int highestBid=player.getBasePrice();
-                Team*highestBidder=NULL;
-                vector<pair<Team*,int>>bidTable;
+    fb.createPost("alice", "hello world");
+    fb.createPost("alice", "Ram Ram");
+    fb.createPost("bob", "Hare Krishna");
 
-               // unordered_map<Team*,int>bidTable;
+    fb.viewPosts();
+    fb.likePost("bob", 0);
 
-                for(auto &team:teams){
-                    if(team.getBudget()>player.getBasePrice() && team.getMaxPlayer()>team.getCurrentPlayer()){
-                        int bidAmount;
-                        cout<<team.getName()<<" , Enter your bid price for "<<player.getName()<<" (Base Price: "
-                        <<player.getBasePrice()<<"): ";
-                        cin>>bidAmount;
-                        if(bidAmount>=highestBid && bidAmount<=team.getBudget()){
-                           bidTable.push_back({&team,bidAmount});
-                        }
-                    }
-                }
+    fb.commentOnPost("alice", 0, "Good morning, Bob!");
 
-                if(!bidTable.empty()){
-                    for(auto bid:bidTable){
-                    if(bid.second>highestBid){
-                        highestBid=bid.second;
-                        highestBidder=bid.first;
-                    }
-                }
-
-                if(highestBidder!=NULL && highestBidder->bid(player,highestBid)){
-                    announceWinner(player,*highestBidder);
-                }else{
-                    cout<<player.getName()<<" remains unsold\n";
-                }
-             }
-        }
-
-
-        void announceWinner(Player &player,Team &team){
-            cout<<"\n Player "<<player.getName()<<" is sold to "<<team.getName()<<" for "<<player.getSoldPrice()<<"\n\n";
-        }
-
-        void diaplayUnsoldPlayer(){
-            cout<<"\n\t List of unsold Players\n";
-            for(auto player:players){
-                if(!player.isSold())
-                    cout<<player.getName()<<" ( "<<player.getRole()<<" ) "<<player.getBasePrice()<<"\n";
-            }
-            cout<<endl;
-        }
-
-        void displayTeamSummary(){
-            for(auto team:teams){
-                team.displayTeam();
-            }
-        }
-};
-
-
-
- int main(){
-
-
-    vector<Player>players={
-        Player("Virat","Batsman",200),
-        Player("Rohit", "Batsman", 180),
-        Player("Jasprit", "Bowler", 220),
-        Player("Ravindra", "All-Rounder", 160),
-        Player("Shreyas", "Batsman", 140),
-        Player("KL Rahul", "Wicketkeeper", 190),
-        Player("Hardik", "All-Rounder", 210),
-        Player("Shami", "Bowler", 170)
-
-    };
-    vector<Team>teams={
-        Team("Mumbai",500,3,0),
-        Team("Chennai",600,3,0)
-    };
-
-    Auctioneer auction(players,teams);
-    auction.startAuction();
-    auction.diaplayUnsoldPlayer();
-    auction.displayTeamSummary();
+    fb.viewPosts();
 
     return 0;
 }
